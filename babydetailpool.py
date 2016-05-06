@@ -5,8 +5,8 @@ import sys
 import multiprocessing
 import requests
 from pyquery import PyQuery as pq
-import re
 import json
+import re
 
 reload(sys)
 sys.setdefaultencoding("utf-8")
@@ -43,18 +43,33 @@ class babydetailpool():
     # todo:处理队列里的数据明细
     def get_item_text(self, baby_item):
         r = requests.get(baby_item.target_link)
-        print r.status_code
         if r.status_code == 200:
             html = pq(r.text)
             item_content = html(
-                'div.clearfix>div.bd-left>div.page>div.info').text()
-            item_content = re.sub('www.ci123.com', '#', item_content)
+                'div.clearfix>div.bd-left>div.page>div.info').html()
+            regex_html_item_link = self.regex_parse_a(item_content)
+            regex_html_item_link = self.regex_parse_img(regex_html_item_link)
+            k = regex_html_item_link.rfind("<p")
+            start_offset = regex_html_item_link.find("<")
+            if k == -1:
+                new_item_link = regex_html_item_link[start_offset:]
+            else:
+                new_item_link = regex_html_item_link[start_offset:k]
             item_es_content = {
                 "agerecommended_title": baby_item.target_text,
-                "agerecommended_content": item_content,
-                "agerecommended_ages": baby_item.target_ages}
+                "agerecommended_content": new_item_link,
+                "agerecommended_ages": baby_item.target_ages,
+                "agerecommended_link": baby_item.target_link}
             es_agestant_data = json.dumps(item_es_content)
-            es_url = "http://172.28.128.3:9200/babygrowthassistant/agerecommended/"
+            es_url = "http://23.244.68.121:9200/babygrowthassistant/agerecommended/"
             baby_respone = requests.post(es_url, data=es_agestant_data)
             results = json.loads(baby_respone.text)
             print(results)
+
+    def regex_parse_a(self, data):
+        p = re.compile(r'<a.*?/a>')
+        return p.sub('', data)
+
+    def regex_parse_img(self, data):
+        p = re.compile(r'<img.*/>')
+        return p.sub('', data)

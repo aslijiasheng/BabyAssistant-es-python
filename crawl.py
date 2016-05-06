@@ -98,7 +98,6 @@ class Crawl():
                         # 产生多个线程来处理类目的Url
                         target_link = pq(ullist[i])('li > a').attr('href')
                         target_text = pq(ullist[i])('li > a').text()
-                        print target_link
                         item_link_queue.put(
                             itempagezone(
                                 target.target_ages, target_link, target_text))
