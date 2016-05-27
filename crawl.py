@@ -37,6 +37,9 @@ class Crawl():
             'one': 'one',
             'two': 'two',
             'three': 'three'}
+        self.headers = {
+            'User-Agent':
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
         self.beginMultiProcess()
 
     def resultCollector(self, result):
@@ -89,7 +92,11 @@ class Crawl():
     # 分页列表链接获取
     def get_item_link(self, target, item_link_queue):
         try:
-            r = requests.get(target.target_link)
+            link = target.target_link
+            k = link.rfind("|")
+            new_target_link = link[:k]
+            type_classify_id = link[k+1:]
+            r = requests.get(new_target_link, headers=self.headers)
             if r.status_code == 200:
                 html = pq(r.text)
                 item_links = html('div.knowledge>ul.knowledge-lists')
@@ -100,7 +107,10 @@ class Crawl():
                         target_text = pq(ullist[i])('li > a').text()
                         item_link_queue.put(
                             itempagezone(
-                                target.target_ages, target_link, target_text))
+                                target.target_ages,
+                                target_link,
+                                target_text,
+                                type_classify_id))
         except requests.exceptions.RequestException as e:
             print('\n' + str(e))
 
@@ -112,7 +122,7 @@ class Crawl():
 
     def getCrawl(self, ages,  url):
         print os.getpid(), "working"
-        r = requests.get(url)
+        r = requests.get(url, headers=self.headers)
         threadBox = []
         if r.status_code == 200:
             html = pq(r.text)
@@ -132,7 +142,8 @@ class Crawl():
 
 if __name__ == "__main__":
     start_urls = {
-        'one': 'http://www.ci123.com/category.php/8029/848',
-        'two': 'http://www.ci123.com/category.php/8029/849',
-        'three': 'http://www.ci123.com/category.php/8029/918'}
+        #  'one': 'http://www.ci123.com/category.php/8029/848',
+        #  'two': 'http://www.ci123.com/category.php/8029/849',
+        'three': 'http://www.ci123.com/category.php/8029/918',
+    }
     Crawl(10, start_urls)
